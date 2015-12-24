@@ -1,36 +1,36 @@
 'use strict'
 
-function computeCentroid(points) {
+let pointCloud = null;
+
+function computeCentroid(pointCloud) {
   let centroid = new THREE.Vector3();
-  const vertices = points.geometry.vertices;
-  points.geometry.vertices.forEach(vertice => {
+  const vertices = pointCloud.geometry.vertices;
+  pointCloud.geometry.vertices.forEach(vertice => {
     centroid.add(vertice);
   });
   centroid.divideScalar(vertices.length);
   return centroid;
 }
 
-let points = null;
-let burritoRotation = new THREE.Euler(2.1, 0.0584, 2.0584)
-
-function loadPoints(loadedCallback) {
+function loadPointCloud(loadedCallback) {
   new THREE.PLYLoader().load('ply/burrito_trimmed.ply', function (geometry) {
-    points = new THREE.Points(geometry, new THREE.PointsMaterial({
+    pointCloud = new THREE.Points(geometry, new THREE.PointsMaterial({
       size: 0.1,
       vertexColors: THREE.VertexColors
     }));
-    const centroid = computeCentroid(points);
-    points.geometry.vertices.forEach(vertice => {
+    const centroid = computeCentroid(pointCloud);
+    pointCloud.geometry.vertices.forEach(vertice => {
       vertice.sub(centroid);
     });
-    points.rotation.set(burritoRotation.x, burritoRotation.y, burritoRotation.z);
-    points.updateMatrix(); 
-    points.geometry.applyMatrix( points.matrix );
-    points.matrix.identity();
-    points.position.set( 0, 0, 0 );
-    points.rotation.set( 0, 0, 0 );
-    points.scale.set( 1, 1, 1 );
-    loadedCallback(points);
+    const burritoRotation = new THREE.Euler(2.1, 0.0584, 2.0584)
+    pointCloud.rotation.set(burritoRotation.x, burritoRotation.y, burritoRotation.z);
+    pointCloud.updateMatrix(); 
+    pointCloud.geometry.applyMatrix(pointCloud.matrix);
+    pointCloud.matrix.identity();
+    pointCloud.position.set(0, 0, 0);
+    pointCloud.rotation.set(0, 0, 0);
+    pointCloud.scale.set(1, 1, 1);
+    loadedCallback(pointCloud);
   });
 }
 
@@ -54,8 +54,10 @@ function main() {
   const minFillRatio = 0.3;
   const lineWidth = 2;
   const ptSplitMultiple = 10;
-  const blockDim = new THREE.Vector3(0.2, 0.2, 0.2);
-  const moveVec = new THREE.Vector2(0, 5);
+  const moveScalar = 5;
+  const pointSize = 0.1;
+  const blockDimGrid = new THREE.Vector3(0.2, 0.2, 0.2);
+  const blockDimCloth = new THREE.Vector3(0.1, 0.1, 0.1);
 
   const canvas = document.getElementById('canvas');
 
@@ -65,19 +67,19 @@ function main() {
   let controls = setupControls(camera, renderer);
   let scene = new THREE.Scene();
 
-  function line(vStart, vEnd, color, lineWidth) {
-    var material = new THREE.LineBasicMaterial({ color: color, linewidth: lineWidth });
-    var geometry = new THREE.Geometry();
-    geometry.vertices.push(vStart);
-    geometry.vertices.push(vEnd);
-    return new THREE.Line(geometry, material);
-  }
+  let occupancyGrid = null;
+  let cloth = null;
 
-  loadPoints(points => {
-    let occupancyGrid = new OccupancyGrid(points, blockDim);
+  loadPointCloud(pointCloud => {
+    occupancyGrid = new OccupancyGrid(pointCloud, blockDimGrid);
+    cloth = new Cloth(blockDimCloth, occupancyGrid.boundingBox,
+                      moveScalar, pointSize);
+
+    let points = cloth.genPoints();
+    scene.add(points);
     occupancyGrid.drawBoundingBox(scene);
     occupancyGrid.drawGrid(scene);
-    scene.add(points);
+    scene.add(pointCloud);
   });
 
   camera.position.set(0, 2, 10);
@@ -92,13 +94,13 @@ function main() {
 }
 
 function rotationInput(element, axis) {
-  if (points) {
+  if (pointCloud) {
     switch (axis) {
-      case 'x': points.rotation.x = element.value; break;
-      case 'y': points.rotation.y = element.value; break;
-      case 'z': points.rotation.z = element.value; break;
+      case 'x': pointCloud.rotation.x = element.value; break;
+      case 'y': pointCloud.rotation.y = element.value; break;
+      case 'z': pointCloud.rotation.z = element.value; break;
     }
-    points.geometry.verticesNeedUpdate = true;
+    pointCloud.geometry.verticesNeedUpdate = true;
   }
 }
 

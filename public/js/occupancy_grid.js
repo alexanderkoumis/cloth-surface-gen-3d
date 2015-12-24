@@ -11,7 +11,7 @@ class OccupancyGrid {
         parseInt(bBoxSize.y / blockDim.y),
         parseInt(bBoxSize.z / blockDim.z)
       );
-    } 
+    }
 
     function calcGridPos(position, boundingBox, blockDim, gridDim, numGridElements) {
       let offsetPosition = position.clone().sub(boundingBox.min);
@@ -37,7 +37,6 @@ class OccupancyGrid {
                                        blockDim, this.gridDim, numGridElements);
       this.elements[gridPosition]++;
     });
-
 
     let maxPts = 0;
     this.elements.forEach(numPts => {
@@ -110,16 +109,21 @@ class OccupancyGrid {
             'size': 0.05,
             'curveSegments': 10
           });
-          let invOccupancy = 1 - occupancy;
-          let color = new THREE.Color(invOccupancy,
-                                      invOccupancy,
-                                      invOccupancy).getHex();
           let textMesh = new THREE.Mesh(
             new THREE.ShapeGeometry(textShapes),
-            new THREE.MeshBasicMaterial({color: color, side: THREE.DoubleSide})
+            new THREE.MeshBasicMaterial({
+              color: 0x0000ff,
+              side: THREE.DoubleSide,
+              transparent: true,
+              opacity: occupancy
+            })
           );
           scene.add(textMesh);
-          textMesh.position.set(positionMin.x, positionMin.y, positionMin.z);
+          textMesh.position.set(
+            positionMin.x + this.blockDim.x / 2,
+            positionMin.y + this.blockDim.y / 2,
+            positionMin.z + this.blockDim.z / 2
+          );
         }
       }
     }
