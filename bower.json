@@ -1,0 +1,23 @@
+{
+  "name": "cloth-surface-gen-3d",
+  "authors": [
+    "Alexander Koumis <me@alexander.computer>"
+  ],
+  "description": "",
+  "main": "",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "https://github.com/alexanderkoumis/cloth-surface-gen-3d",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "~0.73.0",
+    "threejs-trackball-controls": "*"
+  }
+}
