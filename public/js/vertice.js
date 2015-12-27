@@ -2,10 +2,21 @@
 
 class Vertice {
 
-  constructor(position, moveVec, fromSplit) {
+  constructor(position, moveVec, fromSplit, minFillRatio) {
     this.position = position;
     this.moveVec = moveVec;
     this.fromSplit = fromSplit;
+    this.minFillRatio = minFillRatio;
+    this.neighbors = {}
+  }
+
+  updatePosition(occupancyGrid) {
+    let nextPos = this.position.clone().add(this.moveVec);
+    let nextGridPos = occupancyGrid.calcGridPos(nextPos);
+    let ratioFilled = occupancyGrid.getRatioFilled(nextGridPos);
+    if (ratioFilled < this.minFillRatio) {
+      this.position.add(this.moveVec);
+    }
   }
 
   // calcNeighborDistances() {

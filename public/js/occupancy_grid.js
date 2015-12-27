@@ -13,28 +13,17 @@ class OccupancyGrid {
       );
     }
 
-    function calcGridPos(position, boundingBox, blockDim, gridDim, numGridElements) {
-      let offsetPosition = position.clone().sub(boundingBox.min);
-      let gridX = offsetPosition.x / blockDim.x;
-      let gridY = offsetPosition.y / blockDim.y;
-      let gridZ = offsetPosition.z / blockDim.z;
-      let flatIdx = OccupancyGrid.calcFlatIdx(gridX, gridY, gridZ, gridDim);
-      return Math.min(flatIdx, numGridElements - 1);
-    }
-
     this.boundingBox = this.computeBoundingBox(points);
     this.blockDim = blockDim;
     this.gridDim = calcGridDim(this.boundingBox, blockDim);
 
-    const numGridElements = this.gridDim.x * this.gridDim.y * this.gridDim.z;
+    this.numGridElements = this.gridDim.x * this.gridDim.y * this.gridDim.z;
 
-    this.elements = [].slice.apply(new Int32Array(numGridElements));
-    this.occupancy = [].slice.apply(new Float32Array(numGridElements)); 
-
+    this.elements = [].slice.apply(new Int32Array(this.numGridElements));
+    this.occupancy = [].slice.apply(new Float32Array(this.numGridElements));
 
     points.geometry.vertices.forEach(vertice => {
-      const gridPosition = calcGridPos(vertice, this.boundingBox,
-                                       blockDim, this.gridDim, numGridElements);
+      const gridPosition = this.calcGridPos(vertice);
       this.elements[gridPosition]++;
     });
 
@@ -49,10 +38,23 @@ class OccupancyGrid {
 
   }
 
-  static calcFlatIdx(x, y, z, gridDim) {
-    return parseInt(z) * gridDim.x * gridDim.y +
-           parseInt(y) * gridDim.x +
+  calcFlatIdx(x, y, z) {
+    return parseInt(z) * this.gridDim.x * this.gridDim.y +
+           parseInt(y) * this.gridDim.x +
            parseInt(x);
+  }
+
+  calcGridPos(position) {
+    let offsetPosition = position.clone().sub(this.boundingBox.min);
+    let gridX = offsetPosition.x / this.blockDim.x;
+    let gridY = offsetPosition.y / this.blockDim.y;
+    let gridZ = offsetPosition.z / this.blockDim.z;
+    let flatIdx = this.calcFlatIdx(gridX, gridY, gridZ);
+    return Math.min(flatIdx, this.numGridElements - 1);
+  }
+
+  getRatioFilled(gridPosition) {
+    return this.occupancy[gridPosition];
   }
 
   line(vStart, vEnd, color, lineWidth) {
@@ -90,7 +92,6 @@ class OccupancyGrid {
     for (let x = 0; x < this.gridDim.x; ++x) {
       for (let y = 0; y < this.gridDim.y; ++y) {
         for (let z = 0; z < this.gridDim.z; ++z) {
-
           let positionBase = this.boundingBox.min.clone();
           let positionMin = positionBase.add(new THREE.Vector3(
             x * this.blockDim.x,
@@ -99,7 +100,7 @@ class OccupancyGrid {
           ));
           let positionMax = positionMin.clone().add(this.blockDim);
           // this.drawBox(scene, positionMin, positionMax, 0x0000ff, 2);
-          let flatIdx = OccupancyGrid.calcFlatIdx(x, y, z, this.gridDim);
+          let flatIdx = this.calcFlatIdx(x, y, z);
           let occupancy = this.occupancy[flatIdx].toPrecision(3);
           let elements = this.elements[flatIdx].toPrecision(3);
           let textShapes = THREE.FontUtils.generateShapes(String(occupancy), {

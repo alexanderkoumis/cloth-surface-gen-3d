@@ -15,7 +15,7 @@ function computeCentroid(pointCloud) {
 function loadPointCloud(loadedCallback) {
   new THREE.PLYLoader().load('ply/burrito_trimmed.ply', function (geometry) {
     pointCloud = new THREE.Points(geometry, new THREE.PointsMaterial({
-      size: 0.1,
+      size: 0.04,
       vertexColors: THREE.VertexColors
     }));
     const centroid = computeCentroid(pointCloud);
@@ -43,20 +43,18 @@ function setupControls(camera, renderer) {
   controls.noPan = false;
   controls.staticMoving = true;
   controls.dynamicDampingFactor = 0.3;
-  controls.keys = [ 65, 83, 68 ];
+  controls.keys = [65, 83, 68];
   return controls;
 }
 
 function main() {
 
-  const numPts = 50;
-  const ptRadius = 2;
-  const minFillRatio = 0.3;
+  const minFillRatio = 0.1;
   const lineWidth = 2;
   const ptSplitMultiple = 10;
-  const moveScalar = 5;
-  const pointSize = 0.1;
-  const blockDimGrid = new THREE.Vector3(0.2, 0.2, 0.2);
+  const moveScalar = 0.001;
+  const pointSize = 0.05;
+  const blockDimGrid = new THREE.Vector3(0.1, 0.1, 0.1);
   const blockDimCloth = new THREE.Vector3(0.1, 0.1, 0.1);
 
   const canvas = document.getElementById('canvas');
@@ -73,18 +71,19 @@ function main() {
   loadPointCloud(pointCloud => {
     occupancyGrid = new OccupancyGrid(pointCloud, blockDimGrid);
     cloth = new Cloth(blockDimCloth, occupancyGrid.boundingBox,
-                      moveScalar, pointSize);
-
-    let points = cloth.genPoints();
-    scene.add(points);
+                      moveScalar, pointSize, minFillRatio);
+    // occupancyGrid.drawGrid(scene);
+    scene.add(cloth.points);
     occupancyGrid.drawBoundingBox(scene);
-    occupancyGrid.drawGrid(scene);
     scene.add(pointCloud);
   });
 
   camera.position.set(0, 2, 10);
 
   function render() {
+    if (cloth) {
+      cloth.update(occupancyGrid);
+    }
     renderer.render(scene, camera);
     controls.update();
     requestAnimationFrame(render);
