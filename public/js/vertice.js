@@ -7,7 +7,16 @@ class Vertice {
     this.moveVec = moveVec;
     this.fromSplit = fromSplit;
     this.minFillRatio = minFillRatio;
-    this.neighbors = {}
+    this.neighbors = {
+      tl: null,
+      t:  null,
+      tr: null,
+      r:  null,
+      br: null,
+      b:  null,
+      bl: null,
+      l:  null
+    };
   }
 
   updatePosition(occupancyGrid) {

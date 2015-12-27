@@ -76,6 +76,7 @@ function main() {
     scene.add(cloth.points);
     occupancyGrid.drawBoundingBox(scene);
     scene.add(pointCloud);
+    scene.add(cloth.mesh);
   });
 
   camera.position.set(0, 2, 10);
