@@ -49,8 +49,8 @@ function setupControls(camera, renderer) {
 
 function main() {
 
-  const minFillRatio = 0.1;
-  const ptSplitMultiple = 10;
+  const minFillRatio = 0.2;
+  const maxNeighborDist = 0.2;
   const moveScalar = 0.01;
   const pointSize = 0.03;
   const blockDimGrid = new THREE.Vector3(0.03, 0.03, 0.03);
@@ -70,7 +70,7 @@ function main() {
   loadPointCloud(pointCloud => {
     occupancyGrid = new OccupancyGrid(pointCloud, blockDimGrid);
     cloth = new Cloth(blockDimCloth, occupancyGrid.boundingBox,
-                      moveScalar, pointSize, minFillRatio);
+                      moveScalar, pointSize, minFillRatio, maxNeighborDist);
     // occupancyGrid.drawGrid(scene);
     // scene.add(cloth.points);
     occupancyGrid.drawBoundingBox(scene);

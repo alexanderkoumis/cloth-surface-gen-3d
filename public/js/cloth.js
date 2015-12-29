@@ -2,7 +2,8 @@
 
 class Cloth {
 
-  constructor(blockDim, boundingBox, moveScalar, pointSize, minFillRatio) {
+  constructor(blockDim, boundingBox, moveScalar, pointSize, minFillRatio,
+              maxNeighborDist) {
 
     function calcGridDim(boundingBox, blockDim) {
       let bBoxSize = boundingBox.max.clone().sub(boundingBox.min);
@@ -29,8 +30,8 @@ class Cloth {
         let moveVec = new THREE.Vector3(0, -moveScalar, 0);
         let fromSplit = false;
         geometryPoints.vertices.push(position);
-        this.vertices.push(new Vertice(position, moveVec, fromSplit,
-                                       minFillRatio));
+        this.vertices.push(new Vertice(position, moveVec, minFillRatio,
+                                       maxNeighborDist, fromSplit));
       }
     }
 

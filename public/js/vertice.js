@@ -2,12 +2,13 @@
 
 class Vertice {
 
-  constructor(position, moveVec, fromSplit, minFillRatio) {
+  constructor(position, moveVec, minFillRatio, maxNeighborDist, fromSplit) {
     this.position = position;
     this.nextPosition = position;
     this.moveVec = moveVec;
-    this.fromSplit = fromSplit;
     this.minFillRatio = minFillRatio;
+    this.maxNeighborDist = maxNeighborDist;
+    this.fromSplit = fromSplit;
     this.done = false;
     this.faces = {
       a: null,
@@ -25,7 +26,18 @@ class Vertice {
     };
   }
 
+  neighborDistance(neighbor) {
+    if (this.neighbors[neighbor]) {
+      let returnVal = this.position.distanceTo(this.neighbors[neighbor].position);
+      if (!isNaN(returnVal)) {
+        return returnVal;
+      }
+    }
+    return 0;
+  }
+
   updatePosition(occupancyGrid) {
+
     if (this.done) {
       return;
     }
@@ -34,6 +46,16 @@ class Vertice {
     let ratioFilled = occupancyGrid.getRatioFilled(nextGridPosition);
     if (ratioFilled < this.minFillRatio) {
       if (this.nextPosition.y > occupancyGrid.boundingBox.min.y) {
+        if ((this.neighborDistance('tl') > this.maxNeighborDist) ||
+            (this.neighborDistance('t')  > this.maxNeighborDist) ||
+            (this.neighborDistance('tr') > this.maxNeighborDist) ||
+            (this.neighborDistance('r')  > this.maxNeighborDist) ||
+            (this.neighborDistance('br') > this.maxNeighborDist) ||
+            (this.neighborDistance('b')  > this.maxNeighborDist) ||
+            (this.neighborDistance('bl') > this.maxNeighborDist) ||
+            (this.neighborDistance('l')  > this.maxNeighborDist)) {
+          return;
+        }
         this.position.add(this.moveVec);
       }
       else {
