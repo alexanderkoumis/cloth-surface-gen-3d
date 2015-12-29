@@ -79,17 +79,24 @@ class Cloth {
         }
 
         if (x < this.gridDim.x - 1 && z < this.gridDim.z - 1) {
-          geometryMesh.faces.push(new THREE.Face3(currIdx, tIdx, trIdx));
-          geometryMesh.faces.push(new THREE.Face3(currIdx, trIdx, rIdx));
+          let face1 = new THREE.Face3(currIdx, tIdx, trIdx);
+          let face2 = new THREE.Face3(currIdx, trIdx, rIdx);
+          face1.color = new THREE.Color(0x0000ff);
+          face2.color = new THREE.Color(0xff0000);
+          vertice.faces['a'] = face1;
+          vertice.faces['b'] = face2;
+          geometryMesh.faces.push(face1);
+          geometryMesh.faces.push(face2);
         }
       }
     }
 
     this.mesh = new THREE.Mesh(geometryMesh, new THREE.MeshBasicMaterial({
-      color: 0x00000
+      vertexColors: THREE.FaceColors
     }));
 
     geometryPoints.computeBoundingSphere();
+
     this.points = new THREE.Points(geometryPoints, new THREE.PointsMaterial({
         size: pointSize,
         color: 0xff0000
@@ -100,9 +107,11 @@ class Cloth {
   update(occupancyGrid) {
     this.vertices.forEach(vertice => {
       vertice.updatePosition(occupancyGrid);
+      vertice.updateColor(occupancyGrid);
     });
-    this.mesh.geometry.verticesNeedUpdate = true;
     // this.mesh.geometry.elementsNeedUpdate = true;
+    this.mesh.geometry.colorsNeedUpdate = true;
+    this.mesh.geometry.verticesNeedUpdate = true;
     this.points.geometry.verticesNeedUpdate = true;
   }
 

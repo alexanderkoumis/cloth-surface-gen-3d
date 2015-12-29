@@ -21,11 +21,27 @@ class OccupancyGrid {
 
     this.elements = [].slice.apply(new Int32Array(this.numGridElements));
     this.occupancy = [].slice.apply(new Float32Array(this.numGridElements));
+    this.colors = [].slice.apply(new Float32Array(this.numGridElements * 3));
 
-    points.geometry.vertices.forEach(vertice => {
+    for (let i = 0, j = 0; i < points.geometry.vertices.length; i += 1, j += 3) {
+      let vertice = points.geometry.vertices[i];
+      let color = points.geometry.colors[i];
       const gridPosition = this.calcGridPos(vertice);
+      const gridPositionColor = gridPosition * 3;
       this.elements[gridPosition]++;
-    });
+      this.colors[gridPositionColor + 0] += color.r;
+      this.colors[gridPositionColor + 1] += color.g;
+      this.colors[gridPositionColor + 2] += color.b;
+    }
+
+    for (let i = 0, j = 0; i < this.elements.length; i += 1, j += 3) {
+      let numElements = this.elements[i];
+      if (numElements > 0) {
+        this.colors[j + 0] /= numElements;
+        this.colors[j + 1] /= numElements;
+        this.colors[j + 2] /= numElements;
+      }
+    }
 
     let maxPts = 0;
     this.elements.forEach(numPts => {
@@ -53,6 +69,16 @@ class OccupancyGrid {
     return Math.min(flatIdx, this.numGridElements - 1);
   }
 
+  getColor(position) {
+    let gridPosition = this.calcGridPos(position);
+    const gridPositionColor = gridPosition * 3;
+    return new THREE.Color(
+      this.colors[gridPositionColor    ],
+      this.colors[gridPositionColor + 1],
+      this.colors[gridPositionColor + 2]
+    );
+  }
+
   getRatioFilled(gridPosition) {
     return this.occupancy[gridPosition];
   }
@@ -67,7 +93,6 @@ class OccupancyGrid {
     geometry.vertices.push(vEnd);
     return new THREE.Line(geometry, material);
   }
-
 
   drawBox(scene, min, max, color, lineWidth) {
     scene.add(this.line(new THREE.Vector3(min.x, min.y, min.z), new THREE.Vector3(max.x, min.y, min.z), color, lineWidth));

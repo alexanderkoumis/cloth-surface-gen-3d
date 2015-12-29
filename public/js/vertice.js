@@ -3,10 +3,15 @@
 class Vertice {
 
   constructor(position, moveVec, fromSplit, minFillRatio) {
+    this.initPosition = position;
     this.position = position;
     this.moveVec = moveVec;
     this.fromSplit = fromSplit;
     this.minFillRatio = minFillRatio;
+    this.faces = {
+      a: null,
+      b: null
+    }
     this.neighbors = {
       tl: null,
       t:  null,
@@ -25,6 +30,16 @@ class Vertice {
     let ratioFilled = occupancyGrid.getRatioFilled(nextGridPos);
     if (ratioFilled < this.minFillRatio) {
       this.position.add(this.moveVec);
+    }
+  }
+
+  updateColor(occupancyGrid) {
+    if (this.faces.a && this.faces.b) {
+      let newColor = occupancyGrid.getColor(this.position);
+      if (newColor.r > 0 && newColor.g > 0 && newColor.b > 0) {
+        this.faces.a.color.set(newColor);
+        this.faces.b.color.set(newColor);
+      }
     }
   }
 
