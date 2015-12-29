@@ -2,8 +2,7 @@
 
 class Cloth {
 
-  constructor(blockDim, boundingBox, moveScalar, pointSize, minFillRatio,
-              maxNeighborDist) {
+  constructor(pointCloud, optionsUser) {
 
     function calcGridDim(boundingBox, blockDim) {
       let bBoxSize = boundingBox.max.clone().sub(boundingBox.min);
@@ -14,24 +13,49 @@ class Cloth {
       );
     }
 
-    this.blockDim = blockDim;
-    this.gridDim = calcGridDim(boundingBox, blockDim);
-    this.boundingBox = boundingBox;
-    this.moveScalar = moveScalar;
-    this.pointSize = pointSize;
+    let optionsDefault = {
+      bboxLineWidth: 2,
+      minFillRatio: 0.2,
+      maxNeighborDist: 0.1,
+      moveScalar: 0.01,
+      pointSize: 0.03,
+      blockDimGrid: new THREE.Vector3(0.03, 0.03, 0.03),
+      blockDimCloth: new THREE.Vector3(0.04, 0.04, 0.03)
+    }
+
+    let options = {};
+
+    Object.keys(optionsDefault).forEach(function(option) {
+      options[option] = optionsUser[option] === undefined ?
+                        optionsDefault[option] :
+                        optionsUser[option];
+    });
+
+    this.occupancyGrid = new OccupancyGrid(pointCloud, options.blockDimGrid,
+                                           options.bboxLineWidth);
+
+    let bbox = this.occupancyGrid.bbox;
+
+    this.blockDim = options.blockDimCloth;
+    this.gridDim = calcGridDim(bbox, options.blockDimCloth);
+    this.boundingBox = bbox;
+    this.moveScalar = options.moveScalar;
+    this.pointSize = options.pointSize;
+    this.minFillRatio = options.minFillRatio;
+    this.maxNeighborDist = options.maxNeighborDist;
     this.vertices = [];
 
     let geometryPoints = new THREE.Geometry();
     for (let z = 0; z < this.gridDim.z; ++z) {
       for (let x = 0; x < this.gridDim.x; ++x) {
-        let position = new THREE.Vector3(x * blockDim.x + boundingBox.min.x,
-                                        boundingBox.max.y,
-                                        z * blockDim.z + boundingBox.min.z);
-        let moveVec = new THREE.Vector3(0, -moveScalar, 0);
+        let position = new THREE.Vector3(x * this.blockDim.x + bbox.min.x,
+                                        bbox.max.y,
+                                        z * this.blockDim.z + bbox.min.z);
+        let moveVec = new THREE.Vector3(0, -this.moveScalar, 0);
         let fromSplit = false;
         geometryPoints.vertices.push(position);
-        this.vertices.push(new Vertice(position, moveVec, minFillRatio,
-                                       maxNeighborDist, fromSplit));
+        this.vertices.push(new Vertice(position, moveVec, this.minFillRatio,
+                                       this.maxNeighborDist, fromSplit));
       }
     }
 
@@ -100,16 +124,16 @@ class Cloth {
     geometryPoints.computeBoundingSphere();
 
     this.points = new THREE.Points(geometryPoints, new THREE.PointsMaterial({
-        size: pointSize,
+        size: this.pointSize,
         color: 0xff0000
     }));
 
   }
 
-  update(occupancyGrid) {
+  update() {
     this.vertices.forEach(vertice => {
-      vertice.updatePosition(occupancyGrid);
-      vertice.updateColor(occupancyGrid);
+      vertice.updatePosition(this.occupancyGrid);
+      vertice.updateColor(this.occupancyGrid);
     });
     this.mesh.geometry.colorsNeedUpdate = true;
     this.mesh.geometry.verticesNeedUpdate = true;
