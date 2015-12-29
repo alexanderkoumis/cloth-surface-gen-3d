@@ -28,16 +28,15 @@ class Vertice {
 
   neighborDistance(neighbor) {
     if (this.neighbors[neighbor]) {
-      let returnVal = this.position.distanceTo(this.neighbors[neighbor].position);
-      if (!isNaN(returnVal)) {
-        return returnVal;
+      let dist = this.position.distanceTo(this.neighbors[neighbor].position);
+      if (!isNaN(dist)) {
+        return dist;
       }
     }
-    return 0;
+    return 0.0;
   }
 
   updatePosition(occupancyGrid) {
-
     if (this.done) {
       return;
     }
@@ -45,7 +44,7 @@ class Vertice {
     let nextGridPosition = occupancyGrid.calcGridPos(this.nextPosition);
     let ratioFilled = occupancyGrid.getRatioFilled(nextGridPosition);
     if (ratioFilled < this.minFillRatio) {
-      if (this.nextPosition.y > occupancyGrid.boundingBox.min.y) {
+      if (this.nextPosition.y > occupancyGrid.bbox.min.y) {
         if ((this.neighborDistance('tl') > this.maxNeighborDist) ||
             (this.neighborDistance('t')  > this.maxNeighborDist) ||
             (this.neighborDistance('tr') > this.maxNeighborDist) ||
@@ -70,7 +69,7 @@ class Vertice {
     }
     if (this.faces.a && this.faces.b) {
       let newColor = occupancyGrid.getColor(this.nextPosition);
-      if (newColor.r > 0 && newColor.g > 0 && newColor.b > 0) {
+      if (newColor.r > 0.0 && newColor.g > 0.0 && newColor.b > 0.0) {
         this.faces.a.color.set(newColor);
         this.faces.b.color.set(newColor);
       }

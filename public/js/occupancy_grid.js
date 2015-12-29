@@ -2,7 +2,7 @@
 
 class OccupancyGrid {
 
-  constructor(points, blockDim) {
+  constructor(points, blockDim, bboxLineWidth) {
 
     function calcGridDim(boundingBox, blockDim) {
       let bBoxSize = boundingBox.max.clone().sub(boundingBox.min);
@@ -13,9 +13,11 @@ class OccupancyGrid {
       );
     }
 
-    this.boundingBox = this.computeBoundingBox(points);
+    this.bbox = this.computeBoundingBox(points);
+    this.bboxObj = this.createBoxLine(this.bbox.min, this.bbox.max, 0x00ff00,
+                                      bboxLineWidth);
     this.blockDim = blockDim;
-    this.gridDim = calcGridDim(this.boundingBox, blockDim);
+    this.gridDim = calcGridDim(this.bbox, blockDim);
 
     this.numGridElements = this.gridDim.x * this.gridDim.y * this.gridDim.z;
 
@@ -61,7 +63,7 @@ class OccupancyGrid {
   }
 
   calcGridPos(position) {
-    let offsetPosition = position.clone().sub(this.boundingBox.min);
+    let offsetPosition = position.clone().sub(this.bbox.min);
     let gridX = offsetPosition.x / this.blockDim.x;
     let gridY = offsetPosition.y / this.blockDim.y;
     let gridZ = offsetPosition.z / this.blockDim.z;
@@ -83,34 +85,28 @@ class OccupancyGrid {
     return this.occupancy[gridPosition];
   }
 
-  line(vStart, vEnd, color, lineWidth) {
-    var material = new THREE.LineBasicMaterial({
+  createBoxLine(min, max, color, lineWidth) {
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(new THREE.Vector3(min.x, min.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, min.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, min.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, min.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, min.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, max.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, max.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, max.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, max.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, max.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, max.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, min.y, min.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, min.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(max.x, max.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, max.y, max.z));
+    geometry.vertices.push(new THREE.Vector3(min.x, min.y, max.z));
+    return new THREE.Line(geometry, new THREE.LineBasicMaterial({
       color: color,
       linewidth: lineWidth
-    });
-    var geometry = new THREE.Geometry();
-    geometry.vertices.push(vStart);
-    geometry.vertices.push(vEnd);
-    return new THREE.Line(geometry, material);
-  }
-
-  drawBox(scene, min, max, color, lineWidth) {
-    scene.add(this.line(new THREE.Vector3(min.x, min.y, min.z), new THREE.Vector3(max.x, min.y, min.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, min.y, max.z), new THREE.Vector3(max.x, min.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, max.y, min.z), new THREE.Vector3(max.x, max.y, min.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, max.y, max.z), new THREE.Vector3(max.x, max.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, min.y, min.z), new THREE.Vector3(min.x, max.y, min.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, min.y, max.z), new THREE.Vector3(min.x, max.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(max.x, min.y, min.z), new THREE.Vector3(max.x, max.y, min.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(max.x, min.y, max.z), new THREE.Vector3(max.x, max.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, min.y, min.z), new THREE.Vector3(min.x, min.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(min.x, max.y, min.z), new THREE.Vector3(min.x, max.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(max.x, min.y, min.z), new THREE.Vector3(max.x, min.y, max.z), color, lineWidth));
-    scene.add(this.line(new THREE.Vector3(max.x, max.y, min.z), new THREE.Vector3(max.x, max.y, max.z), color, lineWidth));
-  }
-
-  drawBoundingBox(scene) {
-    this.drawBox(scene, this.boundingBox.min, this.boundingBox.max, 0x00ff00, 5);
+    }));
   }
 
   drawGrid(scene) {
@@ -124,7 +120,9 @@ class OccupancyGrid {
             z * this.blockDim.z
           ));
           let positionMax = positionMin.clone().add(this.blockDim);
-          // this.drawBox(scene, positionMin, positionMax, 0x0000ff, 2);
+          let boxLine = this.createBoxLine(positionMin, positionMax, 0x0000ff,
+                                           2);
+          scene.add(boxLine);
           let flatIdx = this.calcFlatIdx(x, y, z);
           let occupancy = this.occupancy[flatIdx].toPrecision(3);
           let elements = this.elements[flatIdx].toPrecision(3);
@@ -155,7 +153,7 @@ class OccupancyGrid {
     }
   }
 
-  computeBoundingBox(points) {
+  computeBoundingBox(points, bboxLineWidth) {
     let min = new THREE.Vector3();
     let max = new THREE.Vector3();
     points.geometry.vertices.forEach(vertice => {

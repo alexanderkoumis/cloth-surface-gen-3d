@@ -93,8 +93,8 @@ class Cloth {
     }
 
     this.mesh = new THREE.Mesh(geometryMesh, new THREE.MeshFaceMaterial([
-      new THREE.MeshBasicMaterial( { opacity: 1, vertexColors: THREE.FaceColors } ),
-      new THREE.MeshBasicMaterial( { opacity: 0, vertexColors: THREE.FaceColors } )
+      new THREE.MeshBasicMaterial({ opacity: 1, vertexColors: THREE.FaceColors }),
+      new THREE.MeshBasicMaterial({ opacity: 0, vertexColors: THREE.FaceColors })
     ]));
 
     geometryPoints.computeBoundingSphere();

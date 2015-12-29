@@ -1,6 +1,25 @@
 'use strict'
 
-let pointCloud = null;
+let scene = new THREE.Scene();
+
+let sceneObjs = {
+  'pts': { show: true, obj: null },
+  'mesh': { show: true, obj: null },
+  'bbox': { show: true, obj: null }
+}
+
+function toggle(objName) {
+  let obj = sceneObjs[objName];
+  obj['show'] = obj['show'] ? false : true;
+  if (obj['obj']) {
+    if (obj['show']) {
+      scene.add(obj['obj']);
+    }
+    else {
+      scene.remove(obj['obj']);
+    }
+  }
+}
 
 function computeCentroid(pointCloud) {
   let centroid = new THREE.Vector3();
@@ -14,10 +33,11 @@ function computeCentroid(pointCloud) {
 
 function loadPointCloud(loadedCallback) {
   new THREE.PLYLoader().load('ply/burrito_trimmed.ply', function (geometry) {
-    pointCloud = new THREE.Points(geometry, new THREE.PointsMaterial({
+    sceneObjs['pts']['obj'] = new THREE.Points(geometry, new THREE.PointsMaterial({
       size: 0.04,
       vertexColors: THREE.VertexColors
     }));
+    let pointCloud = sceneObjs['pts']['obj'];
     const centroid = computeCentroid(pointCloud);
     pointCloud.geometry.vertices.forEach(vertice => {
       vertice.sub(centroid);
@@ -49,6 +69,7 @@ function setupControls(camera, renderer) {
 
 function main() {
 
+  const bboxLineWidth = 2;
   const minFillRatio = 0.2;
   const maxNeighborDist = 0.2;
   const moveScalar = 0.01;
@@ -62,19 +83,18 @@ function main() {
   let camera = new THREE.PerspectiveCamera(45, aspect, 1, 5000);
   let renderer = new THREE.WebGLRenderer({ alpha: true, canvas: canvas });
   let controls = setupControls(camera, renderer);
-  let scene = new THREE.Scene();
 
   let occupancyGrid = null;
   let cloth = null;
 
   loadPointCloud(pointCloud => {
-    occupancyGrid = new OccupancyGrid(pointCloud, blockDimGrid);
-    cloth = new Cloth(blockDimCloth, occupancyGrid.boundingBox,
+    occupancyGrid = new OccupancyGrid(pointCloud, blockDimGrid, bboxLineWidth);
+    sceneObjs['bbox']['obj'] = occupancyGrid.bboxObj;
+    cloth = new Cloth(blockDimCloth, occupancyGrid.bbox,
                       moveScalar, pointSize, minFillRatio, maxNeighborDist);
-    // occupancyGrid.drawGrid(scene);
-    // scene.add(cloth.points);
-    occupancyGrid.drawBoundingBox(scene);
+    sceneObjs['mesh']['obj'] = cloth.mesh;
     scene.add(pointCloud);
+    scene.add(occupancyGrid.bboxObj);
     scene.add(cloth.mesh);
   });
 
@@ -93,6 +113,7 @@ function main() {
 }
 
 function rotationInput(element, axis) {
+  let pointCloud = sceneObjs['pts']['obj'];
   if (pointCloud) {
     switch (axis) {
       case 'x': pointCloud.rotation.x = element.value; break;
