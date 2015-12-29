@@ -50,12 +50,11 @@ function setupControls(camera, renderer) {
 function main() {
 
   const minFillRatio = 0.1;
-  const lineWidth = 2;
   const ptSplitMultiple = 10;
-  const moveScalar = 0.001;
-  const pointSize = 0.05;
-  const blockDimGrid = new THREE.Vector3(0.1, 0.1, 0.1);
-  const blockDimCloth = new THREE.Vector3(0.1, 0.1, 0.1);
+  const moveScalar = 0.01;
+  const pointSize = 0.03;
+  const blockDimGrid = new THREE.Vector3(0.03, 0.03, 0.03);
+  const blockDimCloth = new THREE.Vector3(0.03, 0.03, 0.03);
 
   const canvas = document.getElementById('canvas');
 
@@ -73,7 +72,7 @@ function main() {
     cloth = new Cloth(blockDimCloth, occupancyGrid.boundingBox,
                       moveScalar, pointSize, minFillRatio);
     // occupancyGrid.drawGrid(scene);
-    scene.add(cloth.points);
+    // scene.add(cloth.points);
     occupancyGrid.drawBoundingBox(scene);
     scene.add(pointCloud);
     scene.add(cloth.mesh);

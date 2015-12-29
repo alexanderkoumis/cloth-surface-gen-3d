@@ -91,9 +91,10 @@ class Cloth {
       }
     }
 
-    this.mesh = new THREE.Mesh(geometryMesh, new THREE.MeshBasicMaterial({
-      vertexColors: THREE.FaceColors
-    }));
+    this.mesh = new THREE.Mesh(geometryMesh, new THREE.MeshFaceMaterial([
+      new THREE.MeshBasicMaterial( { opacity: 1, vertexColors: THREE.FaceColors } ),
+      new THREE.MeshBasicMaterial( { opacity: 0, vertexColors: THREE.FaceColors } )
+    ]));
 
     geometryPoints.computeBoundingSphere();
 
@@ -109,7 +110,6 @@ class Cloth {
       vertice.updatePosition(occupancyGrid);
       vertice.updateColor(occupancyGrid);
     });
-    // this.mesh.geometry.elementsNeedUpdate = true;
     this.mesh.geometry.colorsNeedUpdate = true;
     this.mesh.geometry.verticesNeedUpdate = true;
     this.points.geometry.verticesNeedUpdate = true;
