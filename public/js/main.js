@@ -1,11 +1,14 @@
 'use strict'
 
+let cloth = null;
 let scene = new THREE.Scene();
 
 let sceneObjs = {
   'pts': { show: true, obj: null },
   'mesh': { show: true, obj: null },
-  'bbox': { show: true, obj: null }
+  'bbox': { show: true, obj: null },
+  'verts': { show: true, obj: null },
+  'grid': { show: true, obj: null }
 }
 
 function toggle(objName) {
@@ -45,7 +48,7 @@ function loadPointCloud(loadedCallback) {
     return centroid;
   }
 
-  new THREE.PLYLoader().load('ply/burrito_trimmed.ply', function (geometry) {
+  new THREE.PLYLoader().load('ply/burrito_trimmed.ply', geometry => {
     let pointCloud = new THREE.Points(geometry, new THREE.PointsMaterial({
       size: 0.04,
       vertexColors: THREE.VertexColors
@@ -54,7 +57,7 @@ function loadPointCloud(loadedCallback) {
     pointCloud.geometry.vertices.forEach(vertice => {
       vertice.sub(centroid);
     });
-    const burritoRot = new THREE.Euler(2.1, 0.0584, 2.0584)
+    const burritoRot = new THREE.Euler(2.1 + Math.PI / 2, 0.0584, 2.0584)
     pointCloud.rotation.set(burritoRot.x, burritoRot.y, burritoRot.z);
     pointCloud.updateMatrix(); 
     pointCloud.geometry.applyMatrix(pointCloud.matrix);
@@ -68,9 +71,8 @@ function loadPointCloud(loadedCallback) {
 
 function main() {
 
-  const canvas = document.getElementById('canvas');
+  let canvas = document.getElementById('canvas');
 
-  let cloth = null;
   let aspect = canvas.width / canvas.height;
   let camera = new THREE.PerspectiveCamera(45, aspect, 1, 5000);
   let renderer = new THREE.WebGLRenderer({ alpha: true, canvas: canvas });
@@ -89,19 +91,24 @@ function main() {
   loadPointCloud(pointCloud => {
     cloth = new Cloth(pointCloud, {
       bboxLineWidth: 2,
-      minFillRatio: 0.2,
-      maxNeighborDist: 0.1,
-      moveScalar: 0.01,
-      pointSize: 0.03,
-      blockDimGrid: new THREE.Vector3(0.03, 0.03, 0.03),
-      blockDimCloth: new THREE.Vector3(0.04, 0.04, 0.03)
+      minFillRatio: 0.1,
+      maxNeighborDist: 0.05,
+      pointSize: 0.01,
+      moveVec: new THREE.Vector3(0, 0, -0.01),
+      blockDimGrid: new THREE.Vector3(0.03, 0.03, 0.01),
+      blockDimCloth: new THREE.Vector3(0.02, 0.02, 0.03)
     });
     sceneObjs['pts']['obj'] = pointCloud;
     sceneObjs['bbox']['obj'] = cloth.occupancyGrid.bboxObj;
     sceneObjs['mesh']['obj'] = cloth.mesh;
+    sceneObjs['verts']['obj'] = cloth.points;
+    sceneObjs['grid']['obj'] = new THREE.GridHelper(10, 1);
     scene.add(sceneObjs['pts']['obj']);
     scene.add(sceneObjs['bbox']['obj']);
     scene.add(sceneObjs['mesh']['obj']);
+    scene.add(sceneObjs['verts']['obj']);
+    scene.add(sceneObjs['grid']['obj']);
+    cloth.occupancyGrid.drawGrid(scene);
   });
 
   (function render() {

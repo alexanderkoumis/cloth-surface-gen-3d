@@ -14,7 +14,7 @@ class OccupancyGrid {
     }
 
     this.bbox = this.computeBoundingBox(points);
-    this.bboxObj = this.createBoxLine(this.bbox.min, this.bbox.max, 0x00ff00,
+    this.bboxObj = this.createBoxLine(this.bbox.min, this.bbox.max, 0x00ff00, 1,
                                       bboxLineWidth);
     this.blockDim = blockDim;
     this.gridDim = calcGridDim(this.bbox, blockDim);
@@ -25,7 +25,7 @@ class OccupancyGrid {
     this.occupancy = [].slice.apply(new Float32Array(this.numGridElements));
     this.colors = [].slice.apply(new Float32Array(this.numGridElements * 3));
 
-    for (let i = 0, j = 0; i < points.geometry.vertices.length; i += 1, j += 3) {
+    for (let i = 0; i < points.geometry.vertices.length; i += 1) {
       let vertice = points.geometry.vertices[i];
       let color = points.geometry.colors[i];
       const gridPosition = this.calcGridPos(vertice);
@@ -57,17 +57,20 @@ class OccupancyGrid {
   }
 
   calcFlatIdx(x, y, z) {
-    return parseInt(z) * this.gridDim.x * this.gridDim.y +
+    return parseInt(z) * this.gridDim.y * this.gridDim.x+
            parseInt(y) * this.gridDim.x +
            parseInt(x);
   }
 
-  calcGridPos(position) {
+  calcGridPos(position, log) {
     let offsetPosition = position.clone().sub(this.bbox.min);
     let gridX = offsetPosition.x / this.blockDim.x;
     let gridY = offsetPosition.y / this.blockDim.y;
     let gridZ = offsetPosition.z / this.blockDim.z;
     let flatIdx = this.calcFlatIdx(gridX, gridY, gridZ);
+    if (log) {
+      console.log('[', gridX, gridY, gridZ, ']', flatIdx, this.numGridElements);
+    }
     return Math.min(flatIdx, this.numGridElements - 1);
   }
 
@@ -85,7 +88,7 @@ class OccupancyGrid {
     return this.occupancy[gridPosition];
   }
 
-  createBoxLine(min, max, color, lineWidth) {
+  createBoxLine(min, max, color, opacity, lineWidth) {
     var geometry = new THREE.Geometry();
     geometry.vertices.push(new THREE.Vector3(min.x, min.y, min.z));
     geometry.vertices.push(new THREE.Vector3(max.x, min.y, min.z));
@@ -105,7 +108,9 @@ class OccupancyGrid {
     geometry.vertices.push(new THREE.Vector3(min.x, min.y, max.z));
     return new THREE.Line(geometry, new THREE.LineBasicMaterial({
       color: color,
-      linewidth: lineWidth
+      linewidth: lineWidth,
+      transparent: true,
+      opacity: opacity
     }));
   }
 
@@ -113,41 +118,42 @@ class OccupancyGrid {
     for (let x = 0; x < this.gridDim.x; ++x) {
       for (let y = 0; y < this.gridDim.y; ++y) {
         for (let z = 0; z < this.gridDim.z; ++z) {
-          let positionBase = this.boundingBox.min.clone();
+          let positionBase = this.bbox.min.clone();
           let positionMin = positionBase.add(new THREE.Vector3(
             x * this.blockDim.x,
             y * this.blockDim.y,
             z * this.blockDim.z
           ));
+          let position = positionMin.clone().add(this.blockDim.clone().divideScalar(2));
           let positionMax = positionMin.clone().add(this.blockDim);
-          let boxLine = this.createBoxLine(positionMin, positionMax, 0x0000ff,
-                                           2);
-          scene.add(boxLine);
+          let color = this.getColor(position);
           let flatIdx = this.calcFlatIdx(x, y, z);
           let occupancy = this.occupancy[flatIdx].toPrecision(3);
-          let elements = this.elements[flatIdx].toPrecision(3);
-          let textShapes = THREE.FontUtils.generateShapes(String(occupancy), {
-            'font': 'helvetiker',
-            'weight': 'normal',
-            'style': 'normal',
-            'size': 0.05,
-            'curveSegments': 10
-          });
-          let textMesh = new THREE.Mesh(
-            new THREE.ShapeGeometry(textShapes),
-            new THREE.MeshBasicMaterial({
-              color: 0x0000ff,
-              side: THREE.DoubleSide,
-              transparent: true,
-              opacity: occupancy
-            })
-          );
-          scene.add(textMesh);
-          textMesh.position.set(
-            positionMin.x + this.blockDim.x / 2,
-            positionMin.y + this.blockDim.y / 2,
-            positionMin.z + this.blockDim.z / 2
-          );
+          let boxLine = this.createBoxLine(positionMin, positionMax, color.getHex(), occupancy, 2);
+          scene.add(boxLine);
+          // let elements = this.elements[flatIdx].toPrecision(3);
+          // let textShapes = THREE.FontUtils.generateShapes(String(occupancy), {
+          //   'font': 'helvetiker',
+          //   'weight': 'normal',
+          //   'style': 'normal',
+          //   'size': 0.05,
+          //   'curveSegments': 10
+          // });
+          // let textMesh = new THREE.Mesh(
+          //   new THREE.ShapeGeometry(textShapes),
+          //   new THREE.MeshBasicMaterial({
+          //     color: 0x0000ff,
+          //     side: THREE.DoubleSide,
+          //     transparent: true,
+          //     opacity: occupancy
+          //   })
+          // );
+          // scene.add(textMesh);
+          // textMesh.position.set(
+          //   positionMin.x + this.blockDim.x / 2,
+          //   positionMin.y + this.blockDim.y / 2,
+          //   positionMin.z + this.blockDim.z / 2
+          // );
         }
       }
     }
