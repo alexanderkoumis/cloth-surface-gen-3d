@@ -42,20 +42,23 @@ class Vertice {
       return;
     }
     this.nextPosition = this.position.clone().add(this.moveVec);
-    let nextGridPosition = occupancyGrid.calcGridPos(this.nextPosition);
+    let nextX = this.nextPosition.x;
+    let nextY = this.nextPosition.y;
+    let nextZ = this.nextPosition.z;
+    let nextGridPosition = occupancyGrid.calcGridPos(nextX, nextY, nextZ);
     let ratioFilled = occupancyGrid.getRatioFilled(nextGridPosition);
     if (ratioFilled < this.minFillRatio) {
       if (this.nextPosition.z > occupancyGrid.bbox.min.z) {
-        if ((this.neighborDistance('tl') > this.maxNeighborDist) ||
-            (this.neighborDistance('t')  > this.maxNeighborDist) ||
-            (this.neighborDistance('tr') > this.maxNeighborDist) ||
-            (this.neighborDistance('r')  > this.maxNeighborDist) ||
-            (this.neighborDistance('br') > this.maxNeighborDist) ||
-            (this.neighborDistance('b')  > this.maxNeighborDist) ||
-            (this.neighborDistance('bl') > this.maxNeighborDist) ||
-            (this.neighborDistance('l')  > this.maxNeighborDist)) {
-          return;
-        }
+        // if ((this.neighborDistance('tl') > this.maxNeighborDist) ||
+        //     (this.neighborDistance('t')  > this.maxNeighborDist) ||
+        //     (this.neighborDistance('tr') > this.maxNeighborDist) ||
+        //     (this.neighborDistance('r')  > this.maxNeighborDist) ||
+        //     (this.neighborDistance('br') > this.maxNeighborDist) ||
+        //     (this.neighborDistance('b')  > this.maxNeighborDist) ||
+        //     (this.neighborDistance('bl') > this.maxNeighborDist) ||
+        //     (this.neighborDistance('l')  > this.maxNeighborDist)) {
+        //   return;
+        // }
         this.position.add(this.moveVec);
       }
       else {

@@ -2,7 +2,7 @@
 
 class OccupancyGrid {
 
-  constructor(points, blockDim, bboxLineWidth) {
+  constructor(pointCloud, blockDim, bboxLineWidth) {
 
     function calcGridDim(boundingBox, blockDim) {
       let bBoxSize = boundingBox.max.clone().sub(boundingBox.min);
@@ -13,7 +13,10 @@ class OccupancyGrid {
       );
     }
 
-    this.bbox = this.computeBoundingBox(points);
+    const pointPositions = pointCloud.geometry.attributes.position.array;
+    const pointColors = pointCloud.geometry.attributes.color.array;
+
+    this.bbox = this.computeBoundingBox(pointPositions);
     this.bboxObj = this.createBoxLine(this.bbox.min, this.bbox.max, 0x00ff00, 1,
                                       bboxLineWidth);
     this.blockDim = blockDim;
@@ -25,15 +28,19 @@ class OccupancyGrid {
     this.occupancy = [].slice.apply(new Float32Array(this.numGridElements));
     this.colors = [].slice.apply(new Float32Array(this.numGridElements * 3));
 
-    for (let i = 0; i < points.geometry.vertices.length; i += 1) {
-      let vertice = points.geometry.vertices[i];
-      let color = points.geometry.colors[i];
-      const gridPosition = this.calcGridPos(vertice);
+    for (let i = 0; i < pointPositions.length; i += 3) {
+      let verticeX = pointPositions[i];
+      let verticeY = pointPositions[i+1];
+      let verticeZ = pointPositions[i+2];
+      let colorR = pointColors[i];
+      let colorG = pointColors[i+1];
+      let colorB = pointColors[i+2];
+      const gridPosition = this.calcGridPos(verticeX, verticeY, verticeZ);
       const gridPositionColor = gridPosition * 3;
-      this.elements[gridPosition]++;
-      this.colors[gridPositionColor + 0] += color.r;
-      this.colors[gridPositionColor + 1] += color.g;
-      this.colors[gridPositionColor + 2] += color.b;
+      this.elements[gridPosition] += 1;
+      this.colors[gridPositionColor + 0] += colorR;
+      this.colors[gridPositionColor + 1] += colorG;
+      this.colors[gridPositionColor + 2] += colorB;
     }
 
     for (let i = 0, j = 0; i < this.elements.length; i += 1, j += 3) {
@@ -62,11 +69,13 @@ class OccupancyGrid {
            parseInt(x);
   }
 
-  calcGridPos(position, log) {
-    let offsetPosition = position.clone().sub(this.bbox.min);
-    let gridX = offsetPosition.x / this.blockDim.x;
-    let gridY = offsetPosition.y / this.blockDim.y;
-    let gridZ = offsetPosition.z / this.blockDim.z;
+  calcGridPos(x, y, z, log) {
+    let offsetX = x - this.bbox.min.x;
+    let offsetY = y - this.bbox.min.y;
+    let offsetZ = z - this.bbox.min.z;
+    let gridX = offsetX / this.blockDim.x;
+    let gridY = offsetY / this.blockDim.y;
+    let gridZ = offsetZ / this.blockDim.z;
     let flatIdx = this.calcFlatIdx(gridX, gridY, gridZ);
     if (log) {
       console.log('[', gridX, gridY, gridZ, ']', flatIdx, this.numGridElements);
@@ -75,7 +84,7 @@ class OccupancyGrid {
   }
 
   getColor(position) {
-    let gridPosition = this.calcGridPos(position);
+    let gridPosition = this.calcGridPos(position.x, position.y, position.z);
     const gridPositionColor = gridPosition * 3;
     return new THREE.Color(
       this.colors[gridPositionColor    ],
@@ -159,17 +168,20 @@ class OccupancyGrid {
     }
   }
 
-  computeBoundingBox(points, bboxLineWidth) {
+  computeBoundingBox(pointPositions, bboxLineWidth) {
     let min = new THREE.Vector3();
     let max = new THREE.Vector3();
-    points.geometry.vertices.forEach(vertice => {
-      min.x = Math.min(vertice.x, min.x);
-      min.y = Math.min(vertice.y, min.y);
-      min.z = Math.min(vertice.z, min.z);
-      max.x = Math.max(vertice.x, max.x);
-      max.y = Math.max(vertice.y, max.y);
-      max.z = Math.max(vertice.z, max.z);
-    });
+    for (let i = 0; i < pointPositions.length; i += 3) {
+      let verticeX = pointPositions[i];
+      let verticeY = pointPositions[i+1];
+      let verticeZ = pointPositions[i+2];
+      min.x = Math.min(verticeX, min.x);
+      min.y = Math.min(verticeY, min.y);
+      min.z = Math.min(verticeZ, min.z);
+      max.x = Math.max(verticeX, max.x);
+      max.y = Math.max(verticeY, max.y);
+      max.z = Math.max(verticeZ, max.z);
+    }
     return {
       min: min,
       max: max

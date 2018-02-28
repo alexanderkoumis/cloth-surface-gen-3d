@@ -8,7 +8,7 @@ let sceneObjs = {
   'mesh': { show: true, obj: null },
   'bbox': { show: true, obj: null },
   'verts': { show: true, obj: null },
-  'grid': { show: true, obj: null }
+  // 'grid': { show: true, obj: null }
 }
 
 function toggle(objName) {
@@ -36,15 +36,17 @@ function rotationInput(element, axis) {
   }
 }
 
+
 function loadPointCloud(loadedCallback) {
 
-  function computeCentroid(pointCloud) {
+  function computeCentroid(points) {
     let centroid = new THREE.Vector3();
-    const vertices = pointCloud.geometry.vertices;
-    pointCloud.geometry.vertices.forEach(vertice => {
-      centroid.add(vertice);
-    });
-    centroid.divideScalar(vertices.length);
+    for (let i = 0; i < points.length; i += 3) {
+      centroid.x += points[i];
+      centroid.y += points[i+1];
+      centroid.z += points[i+2];
+    }
+    centroid.divideScalar(points.length / 3);
     return centroid;
   }
 
@@ -53,11 +55,18 @@ function loadPointCloud(loadedCallback) {
       size: 0.04,
       vertexColors: THREE.VertexColors
     }));
-    const centroid = computeCentroid(pointCloud);
-    pointCloud.geometry.vertices.forEach(vertice => {
-      vertice.sub(centroid);
-    });
+
+    const points = pointCloud.geometry.attributes.position.array;
+    const centroid = computeCentroid(points);
+
+    for (let i = 0; i < points.length; i += 3) {
+      points[i] -= centroid.x;
+      points[i+1] -= centroid.y;
+      points[i+2] -= centroid.z;
+    }
+
     const burritoRot = new THREE.Euler(2.1 + Math.PI / 2, 0.0584, 2.0584)
+
     pointCloud.rotation.set(burritoRot.x, burritoRot.y, burritoRot.z);
     pointCloud.updateMatrix(); 
     pointCloud.geometry.applyMatrix(pointCloud.matrix);
@@ -72,11 +81,16 @@ function loadPointCloud(loadedCallback) {
 function main() {
 
   let canvas = document.getElementById('canvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
   let aspect = canvas.width / canvas.height;
   let camera = new THREE.PerspectiveCamera(45, aspect, 1, 5000);
-  let renderer = new THREE.WebGLRenderer({ alpha: true, canvas: canvas });
+  let renderer = new THREE.WebGLRenderer({ alpha: true, canvas: canvas, antialias: true });
   let controls = new THREE.TrackballControls( camera, renderer.domElement );
+
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize(window.innerWidth, window.innerHeight);
 
   camera.position.set(0, 2, 10);
   controls.rotateSpeed = 1.0;
@@ -96,20 +110,21 @@ function main() {
       pointSize: 0.01,
       moveVec: new THREE.Vector3(0, 0, -0.01),
       blockDimGrid: new THREE.Vector3(0.03, 0.03, 0.01),
-      blockDimCloth: new THREE.Vector3(0.02, 0.02, 0.03)
+      blockDimCloth: new THREE.Vector3(0.06, 0.06, 0.03)
     });
     sceneObjs['pts']['obj'] = pointCloud;
     sceneObjs['bbox']['obj'] = cloth.occupancyGrid.bboxObj;
     sceneObjs['mesh']['obj'] = cloth.mesh;
     sceneObjs['verts']['obj'] = cloth.points;
-    sceneObjs['grid']['obj'] = new THREE.GridHelper(10, 1);
+    // sceneObjs['grid']['obj'] = new THREE.GridHelper(10, 10);
     scene.add(sceneObjs['pts']['obj']);
     scene.add(sceneObjs['bbox']['obj']);
     scene.add(sceneObjs['mesh']['obj']);
     scene.add(sceneObjs['verts']['obj']);
-    scene.add(sceneObjs['grid']['obj']);
-    cloth.occupancyGrid.drawGrid(scene);
+    // scene.add(sceneObjs['grid']['obj']);
+    // cloth.occupancyGrid.drawGrid(scene);
   });
+
 
   (function render() {
     if (cloth) {
